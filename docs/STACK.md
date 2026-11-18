@@ -109,3 +109,16 @@ PostgreSQL : le serveur de base de données relationnelle répandu en
 entreprise (multi-utilisateurs, réseau). Docker : l'outil qui l'empaquette
 et l'exécute de façon identique partout. Introduits en V2 comme incrément
 d'apprentissage assumé, avec transfert de l'historique existant.
+
+### oxlint
+Le linter du front, présent dans le squelette généré par le template
+Vite courant (il y remplace ESLint) : il analyse le code à la recherche
+d'erreurs et d'anti-patterns, sans l'exécuter. Très rapide (écrit en
+Rust), configuré dans `.oxlintrc.json`.
+
+### État des versions générées (nov. 2026)
+Le squelette initial a été généré avec : TypeScript ~7 (la
+réimplémentation native du compilateur), Vite ^8, React ^19.3 et
+oxlint. Réflexe associé : face à un tutoriel dont une commande ou une
+option n'existe pas, vérifier d'abord les versions de l'outil concerné
+avant de douter de soi.

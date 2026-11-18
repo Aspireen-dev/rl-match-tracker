@@ -73,7 +73,7 @@ V1 endpoints (indicative):
 - `GET /api/matches` — paginated list, filters (mode, date range, result).
 - `GET /api/matches/{id}` — match detail with all players.
 - `GET /api/stats/overview` — aggregates: total matches, win rate, avg goals/saves/assists, per-mode breakdown.
-- `GET /api/health` — ingestion status (is the game connected?).
+- `GET /api/health` — from iteration 0: liveness probe returning `{"status":"ok"}`; extended in iteration 3 with the game connection status ("is the game connected?").
 
 Principles: DTOs only (never expose entities directly), explicit response shapes documented for the frontend, versioned under `/api`.
 
@@ -96,6 +96,7 @@ Principles: DTOs only (never expose entities directly), explicit response shapes
 | React over Angular | Larger job market, bigger ecosystem; author's priority is employability. |
 | SignalR deferred to V3 | Live UI is valuable but not core; V1/V2 prove the data layer first. |
 | Tests introduced per-increment (not day 1) | Learning project: first make the thing work, then learn testing on stable ground (fixtures of real JSON captures as first test assets). |
+| Health endpoint as a JSON envelope from iteration 0 | The status code is the machine contract (200 = alive); the JSON body (`{"status":"ok"}`) keeps the response human-readable in `curl`/browser and the shape ready for the iteration 3 extension (game connection state) without restructuring. |
 | Store raw match payload (JSON) alongside aggregates, from iteration 2 | Enables full recalculation if the parsing logic evolves or a bug is found; adds a compatibility guarantee that aggregate-only storage cannot offer. Cost is negligible (KBs per match). The buffering needed is the same match-boundary detection built in iteration 2 anyway; iteration 1 is deliberately excluded because match boundaries are not yet detected there. |
 
 ## Risks & mitigations
@@ -110,13 +111,27 @@ Principles: DTOs only (never expose entities directly), explicit response shapes
 
 ```
 /
+├── RLMatchTracker.slnx               # .NET solution (XML format — the .NET 10 SDK default)
 ├── src/
-│   ├── Api/            # ASP.NET Core backend (ingestion + REST)
-│   ├── Web/            # React + TypeScript frontend
+│   ├── Api/                          # ASP.NET Core backend (ingestion + REST)
+│   │   ├── Api.csproj                # project identity: target framework, nullable, web SDK
+│   │   ├── Program.cs                # entry point: bootstrap + endpoint routes
+│   │   ├── appsettings*.json         # external config, layered per environment
+│   │   └── Properties/
+│   │       └── launchSettings.json   # local run profiles/ports (only used by dotnet run / IDE launch)
+│   └── Web/                          # React + TypeScript frontend (Vite)
+│       ├── index.html                # the single HTML page; React mounts into #root
+│       ├── vite.config.ts            # dev server config (plugins, /api proxy in dev)
+│       ├── tsconfig*.json            # TS compiler options (app code vs Vite's own config)
+│       ├── package.json              # scripts + dependencies (the .csproj of the front)
+│       ├── package-lock.json         # exact pinned dependency versions (committed)
+│       ├── public/                   # static files served as-is
+│       └── src/                      # React code (main.tsx entry point, App.tsx root component)
 ├── tests/
-│   ├── Api.Tests/      # xUnit
-│   ├── Web.Tests/      # Vitest + RTL
+│   ├── Api.Tests/      # xUnit (from iteration 5)
+│   ├── Web.Tests/      # Vitest + RTL (from iteration 5)
 ├── docs/               # the .md files (this one, PRODUCT, ROADMAP...)
 ├── README.md
+├── MENTORING.md        # session rules between the author and the assistant
 └── .github/workflows/  # CI (introduced in V2)
 ```

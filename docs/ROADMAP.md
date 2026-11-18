@@ -54,6 +54,7 @@
 
 ### Itération 6 — CI GitHub Actions
 - [ ] Workflow : build + tests + lint à chaque push
+- [ ] Repasser `npm audit` et traiter les 5 advisories constatées à l'itération 0 (ReDoS sur la chaîne picomatch → tinyglobby → vite ; ne pas utiliser `--force`, qui rétrograderait Vite)
 - *Apprentissage : CI, GitHub Actions. Naturel une fois les tests écrits.*
 
 ### Itération 7 — Migration SQLite → PostgreSQL
