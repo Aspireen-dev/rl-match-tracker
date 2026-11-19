@@ -4,6 +4,52 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-19 — Fin de l'itération 0 : chaîne de dev complète
+
+- **Objectif** : la page React affiche le statut de l'API via le proxy Vite,
+  bout en bout (`GET /api/health` visible dans la page).
+- **Fait** : proxy `/api` → back dans `vite.config.ts` ; `App.tsx` : fetch au
+  montage du composant, contrôle `response.ok` avant désérialisation, contrat
+  typé `HealthStatus`, état d'erreur rendu dans l'UI ; ménage du contenu de
+  démo du template (assets, styles morts, favicon conservé) ; items de
+  l'itération 0 cochés.
+- **Appris** : une origine = schéma + hôte + port ; Same-Origin Policy (le JS
+  d'une page ne peut lire que les réponses de sa propre origine) et pourquoi
+  le proxy de dev l'esquive (la page ne parle qu'à Vite, qui relaie — CORS
+  n'entre jamais en jeu) ; `fetch` tient sa promesse même sur 404/500 :
+  `response.ok` détecte les erreurs HTTP, `catch` n'attrape que le réseau et
+  les `throw` ; un `throw` dans un `then` descend la chaîne jusqu'au `catch`
+  unique (`ok` est une valeur dérivée : statut entre 200 et 299).
+- **Pièges résolus** : `ECONNREFUSED` côté Vite = proxy fonctionnel mais back
+  éteint (lire une erreur à sa couche) ; 404 du favicon = bruit automatique
+  du navigateur, pas une panne.
+- **Décisions** : garde `if (!response.ok)` + code HTTP dans le message
+  d'erreur ; type nommé `HealthStatus` à la frontière front ; en Conventional
+  Commits, le reformatage est `refactor` (pas `chore`).
+- **À revoir** : mécanique complète origine/SOP/CORS (intuition acquise,
+  formulation à consolider) ; imports JS/TS et `defineConfig`.
+
+## 2026-11-18 — Squelette du monorepo et premier endpoint
+
+- **Objectif** : itération 0 — `src/Api` (ASP.NET Core minimal) + `src/Web`
+  (Vite + React + TS strict), `GET /api/health` fonctionnel et testé.
+- **Fait** : solution .NET 10 (`RLMatchTracker.slnx`, format XML devenu défaut
+  du SDK — la commande `dotnet new sln` n'a pas changé de nom) ; endpoint
+  health testé (200 + `{"status":"ok"}`) ; scaffold front ; synchronisation
+  documentaire (ARCHITECTURE, ROADMAP, STACK, `.gitignore` vérifié).
+- **Appris** : `.csproj` SDK-style (sdk `Web`, Nullable, ImplicitUsings) ;
+  Minimal API : `MapGet` relie une route à une fonction, `TypedResults`
+  explicite le statut et sérialise l'objet anonyme en JSON (contrat camelCase
+  du web) ; config en cascade (`appsettings.Development.json`) ;
+  `launchSettings.json` = ports et profils du dev local ; `npm install` =
+  restore du monde JS (`package.json` demande, lock verrouille).
+- **Pièges résolus** : scripts npm bloqués par la politique d'exécution
+  PowerShell → `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ;
+  `npm audit fix --force` rétrograderait Vite — à refuser.
+- **Décisions** : health check en enveloppe JSON `{"status":"ok"}` (prête pour
+  l'extension de l'itération 3) ; format `.slnx` assumé ; audit npm repoussé
+  à l'itération 6.
+
 ## 2026-11-17 — Revue documentaire complète avant développement
 
 - **Objectif** : relecture critique de la documentation (README, PRODUCT,

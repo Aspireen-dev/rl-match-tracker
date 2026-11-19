@@ -5,9 +5,9 @@
 ## V1 — Fondations : capter, stocker, afficher
 
 ### Itération 0 — Squelette du projet
-- [ ] Créer le monorepo : `src/Api` (ASP.NET Core vide) + `src/Web` (Vite + React + TS strict) + `docs/`
-- [ ] Premier endpoint `GET /api/health` qui répond `ok` ; page React qui l'appelle et l'affiche
-- [ ] Chaîne de dev complète maîtrisée : `dotnet run`, `npm run dev`, proxy Vite vers l'API
+- [x] Créer le monorepo : `src/Api` (ASP.NET Core vide) + `src/Web` (Vite + React + TS strict) + `docs/`
+- [x] Premier endpoint `GET /api/health` qui répond `ok` ; page React qui l'appelle et l'affiche
+- [x] Chaîne de dev complète maîtrisée : `dotnet run`, `npm run dev`, proxy Vite vers l'API
 - *Apprentissage : structure d'un projet ASP.NET Core moderne, Program.cs, DI, npm/Vite*
 
 ### Itération 1 — Se connecter au jeu
