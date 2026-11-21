@@ -4,6 +4,42 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-21 — Itération 1, session 1 : client TCP du flux Stats API
+
+- **Objectif** : BackgroundService connecté au socket du jeu (localhost:49123),
+  logs des messages reçus, reconnexion automatique avec backoff.
+- **Fait** : `GameStatsOptions` (IOptions bindé depuis appsettings),
+  `GameStatsIngestionService` (BackgroundService + TcpClient + parsing
+  streaming), enregistré dans `Program.cs` (`AddHostedService` +
+  `Configure<>`). Vérifié en match réel : connexion stable, messages reçus
+  et logués (~30/s), backoff 2s→30s quand le jeu est éteint.
+- **Appris** : le jeu est le SERVEUR TCP, nous le client ; DI d'ASP.NET Core
+  (injection par constructeur, `ILogger<T>` catégorisé, `IOptions<T>.Value`) ;
+  le logger console vient du bootstrap et se filtre via `Logging:LogLevel` ;
+  `using var`, catch filtrés (`when`), backoff exponentiel.
+- **Découverte clé (format du flux)** : objets
+  `{"Event":"...","Data":"<json échappé>"}` concaténés SANS séparateur
+  (~3 Ko × 30/s). `ReadLineAsync` bloquait (pas de newline) ;
+  `DeserializeAsyncEnumerable` en mode array par défaut plantait →
+  bonne API : `DeserializeAsyncEnumerable<T>(stream, topLevelValues: true)`
+  (.NET 9+). `Data` = JSON sérialisé dans une string → double
+  désérialisation à prévoir pour les DTOs.
+- **Pièges résolus** : cause racine du « rien ne logue » = le flux est une
+  succession d'objets JSON concaténés SANS séparateur (sonde TCP PowerShell :
+  0 newline sur des dizaines de Ko) → `ReadLineAsync` bloquait, puis
+  `DeserializeAsyncEnumerable` en mode array par défaut levait une
+  JsonException (il attend `[`, pas `{`) → spam de reconnexions.
+  Fix : `topLevelValues: true` (.NET 9+). Note rétrospective : le process
+  fantôme lancé par l'IDE n'était pas la cause (le jeu broadcast à plusieurs
+  clients) — il dispersait juste les logs ; d'où la règle : lancer l'API
+  depuis un terminal externe, une seule instance.
+- **Décisions** : parsing via `topLevelValues: true` (ARCHITECTURE.md) ;
+  types explicites plutôt que `var` (CONTRIBUTING.md).
+- **Prochaines étapes** : DTOs typés (UpdateState + événements,
+  tolérance aux champs inconnus) ; capturer des fixtures réelles ; vérifier
+  la fiabilité du champ playlist/mode (risque ARCHITECTURE.md) ; script
+  d'anonymisation des fixtures.
+
 ## 2026-11-19 — Fin de l'itération 0 : chaîne de dev complète
 
 - **Objectif** : la page React affiche le statut de l'API via le proxy Vite,
@@ -88,4 +124,4 @@ la progression — notions acquises, pièges résolus, décisions tranchées.*
   V2 : tests → CI → PostgreSQL → sessions → dashboard.
 - **À revoir / prochaines étapes** : itération 0 (outils prêts : .NET 10,
   Node 26, VS Code) ; vérifier en itération 1 la fiabilité du champ
-  playlist/mode sur fixtures réels.
+  playlist/mode sur fixtures réelles.
