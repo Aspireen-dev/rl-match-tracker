@@ -12,6 +12,7 @@
 
 - .NET 10, C# 14. File-scoped namespaces, nullable reference types enabled (`<Nullable>enable</Nullable>`).
 - Naming: `PascalCase` for public members/types, `camelCase` for parameters, `_camelCase` for private fields.
+- Prefer explicit types over `var` for local variables (readability); `var` remains mandatory for anonymous types.
 - Async all the way: no `.Result`/`.Wait()`, use `async`/`await` with `CancellationToken` where relevant.
 - One class per file, organized by feature folders rather than by type folders:
   - `Ingestion/` (socket client, parsers, DTOs)

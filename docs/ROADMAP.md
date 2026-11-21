@@ -11,10 +11,10 @@
 - *Apprentissage : structure d'un projet ASP.NET Core moderne, Program.cs, DI, npm/Vite*
 
 ### Itération 1 — Se connecter au jeu
-- [ ] Activer la Stats API dans le jeu (TAStatsAPI.ini)
-- [ ] Client TCP asynchrone (BackgroundService) qui se connecte au socket et logue les messages reçus
+- [x] Activer la Stats API dans le jeu (TAStatsAPI.ini)
+- [x] Client TCP asynchrone (BackgroundService) qui se connecte au socket et logue les messages reçus
 - [ ] Deserialiser le JSON en DTOs typés (UpdateState + événements) ; tolérance aux champs inconnus
-- [ ] Reconnexion automatique avec backoff si le jeu ferme le flux
+- [x] Reconnexion automatique avec backoff si le jeu ferme le flux
 - [ ] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests)
 - [ ] **Vérifier la fiabilité du champ playlist/mode sur les fixtures réels** (jouer une partie de chaque type : ranked 2v2, casual 3v3, un extra mode) — cf. risque documenté dans ARCHITECTURE.md ; le résultat tranche le plan B
 - [ ] Écrire le script d'anonymisation des fixtures (noms et UIDs factices, formats préservés) ; captures brutes gitignorées — cf. CONTRIBUTING.md

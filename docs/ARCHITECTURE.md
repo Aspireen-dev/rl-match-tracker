@@ -98,6 +98,7 @@ Principles: DTOs only (never expose entities directly), explicit response shapes
 | Tests introduced per-increment (not day 1) | Learning project: first make the thing work, then learn testing on stable ground (fixtures of real JSON captures as first test assets). |
 | Health endpoint as a JSON envelope from iteration 0 | The status code is the machine contract (200 = alive); the JSON body (`{"status":"ok"}`) keeps the response human-readable in `curl`/browser and the shape ready for the iteration 3 extension (game connection state) without restructuring. |
 | Store raw match payload (JSON) alongside aggregates, from iteration 2 | Enables full recalculation if the parsing logic evolves or a bug is found; adds a compatibility guarantee that aggregate-only storage cannot offer. Cost is negligible (KBs per match). The buffering needed is the same match-boundary detection built in iteration 2 anyway; iteration 1 is deliberately excluded because match boundaries are not yet detected there. |
+| Stream parsing via `JsonSerializer.DeserializeAsyncEnumerable<T>(stream, topLevelValues: true)` (iteration 1) | The game emits concatenated top-level JSON objects `{"Event":...,"Data":"..."}` with **no separator** (~3 KB, 30/s). The default `DeserializeAsyncEnumerable` mode expects a JSON array and fails on this stream; `topLevelValues: true` (.NET 9+) reads successive top-level values natively in streaming, including the buffering of incomplete values. A manual `Utf8JsonReader` splitter was built first, then replaced by this one-liner. |
 
 ## Risks & mitigations
 
