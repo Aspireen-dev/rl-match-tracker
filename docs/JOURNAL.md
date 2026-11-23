@@ -4,6 +4,33 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-23 — Itération 1, session 2 : captures réelles du flux Stats API
+
+- **Objectif** : capturer des échantillons JSON réels du flux et les stocker comme
+  base des futurs tests (captures brutes dans `captures/`, gitignoré).
+- **Fait** : sonde one-off Python (`captures/capture_stream.py`) qui découpe le flux
+  concaténé (objets JSON sans séparateur) via `raw_decode` en JSONL, et
+  `captures/inspect_stream.py` pour l'inventaire. 3 captures : menu (572 msg/30 s),
+  entraînement solo (353 msg), match casual 2v2 complet (13 346 msg, 41 Mo, MatchGuid
+  FAD7CC7A…, score 3-2 confirmé, 0 ligne illisible).
+- **Piège** : flux arrêté (port 49123 ouvert, 0 paquet émis) alors que le ini contenait
+  Port/PacketSendRate. Doc officielle : `PacketSendRate` (défaut 0 = off) active l'API et
+  le ini n'est lu qu'au lancement du jeu → redémarrage obligatoire après modif.
+  `bEnabled=1` ajouté en même temps que le redémarrage (clé UE3 legacy, non documentée
+  par Psyonix) : les deux variables ont changé simultanément, test A/B prévu en prochaine
+  session pour savoir lequel des deux a rétabli le flux.
+- **Découverte clé (format)** : enveloppe `{"Event","Data"}`, `Data` = JSON échappé
+  (double désérialisation). `UpdateState.Data = {MatchGuid, Players[], Game}` avec
+  `Game.PlaylistId`, `Game.Arena`, `Game.Teams[].Score` ; `Player.PrimaryId` au format
+  `Platform|Uid|Splitscreen`. Chaque but émet 2 `GoalScored` (un réel, un vide
+  GoalTime=0 pendant le replay) → compter les buts via `StatfeedEvent EventName='Goal'`
+  ou `Teams[].Score`.
+- **Décisions** : captures brutes dans `captures/` (CONTRIBUTING) ; aucun filtrage à la
+  capture (brut intégral, rejouable) — la sélection des champs se fera dans les DTOs.
+- **Prochaines étapes** : DTOs typés (UpdateState + événements, tolérance champs
+  inconnus) écrits contre ces captures ; corréler `PlaylistId` sur casual 3v3 + extra
+  mode (risque ARCHITECTURE.md) ; script d'anonymisation des fixtures.
+
 ## 2026-11-21 — Itération 1, session 1 : client TCP du flux Stats API
 
 - **Objectif** : BackgroundService connecté au socket du jeu (localhost:49123),
