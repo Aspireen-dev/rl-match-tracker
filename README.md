@@ -41,11 +41,17 @@ Pour que Rocket League diffuse ses stats, activer la Stats API dans :
 
 ```ini
 [TAGame.MatchStatsExporter_TA]
-Port=49123
 PacketSendRate=30
+Port=49123
+WebPort=49124
 ```
 
-Redémarrer le jeu après modification.
+> ⚠️ D'après la [doc officielle](https://www.rocketleague.com/developer/stats-api), c'est
+> `PacketSendRate` qui active l'API (0 = désactivé par défaut), et le fichier ini **n'est
+> lu qu'au lancement du jeu** : toute modification impose de **redémarrer Rocket League**.
+> Symptôme d'un flux arrêté : le port 49123 est ouvert mais **aucun paquet n'est émis**
+> → revérifier le ini (section `[TAGame.MatchStatsExporter_TA]`, `PacketSendRate` entre 1
+> et 120) et relancer le jeu.
 
 ## Statut
 

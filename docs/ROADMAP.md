@@ -15,7 +15,7 @@
 - [x] Client TCP asynchrone (BackgroundService) qui se connecte au socket et logue les messages reçus
 - [ ] Deserialiser le JSON en DTOs typés (UpdateState + événements) ; tolérance aux champs inconnus
 - [x] Reconnexion automatique avec backoff si le jeu ferme le flux
-- [ ] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests)
+- [x] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests) — captures brutes dans `captures/` gitignoré (menu 572 msg/30 s, entraînement 353 msg, match casual 2v2 complet 13 346 msg avec MatchGuid)
 - [ ] **Vérifier la fiabilité du champ playlist/mode sur les fixtures réels** (jouer une partie de chaque type : ranked 2v2, casual 3v3, un extra mode) — cf. risque documenté dans ARCHITECTURE.md ; le résultat tranche le plan B
 - [ ] Écrire le script d'anonymisation des fixtures (noms et UIDs factices, formats préservés) ; captures brutes gitignorées — cf. CONTRIBUTING.md
 - *Apprentissage : async/await avancé, sockets, System.Text.Json, BackgroundService*
