@@ -4,6 +4,32 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-25 — Itération 1, session 3 : DTOs typés + parseur, validés par replay de capture
+
+- **Objectif** : désérialiser le flux en DTOs typés (UpdateState + événements), avec
+  tolérance aux champs inconnus.
+- **Fait** : 13 DTOs dans `src/Api/Ingestion/Dtos/` raccordés à la doc officielle (champs
+  CONDITIONAL/SPECTATOR → nullable ; `Assister` ajouté sur GoalScored) et aux captures
+  réelles. `StreamEventParser` (frontière du schéma externe) : enveloppe `StreamEnvelope`
+  puis double désérialisation de `Data` (string JSON échappée — divergence doc/wire notée
+  dans ARCHITECTURE), dispatch par constantes `StreamEvents`, résultat `ParsedStreamEvent`
+  (record). Tolérance centralisée dans `ParseData<T>` : guard null/vide + catch JsonException
+  → warning tronqué + null, le flux continue. Service réduit au transport (connexion,
+  boucle, backoff) ; parser enregistré en singleton (DI). Filtre log `Api.Ingestion: Debug`
+  en Development.
+- **Vérifié sans le jeu** : `captures/replay_capture.py` rejoue `match-casual-2v2.jsonl`
+  sur TCP 49123 (faux jeu) → 13 346 messages parsés, 0 warning, 0 JSON invalide ; logs
+  lisibles (UpdateState #300 avec PlaylistId=2, Arena, score ; buts avec buteur).
+- **Refactor** : parsing extrait du service vers `StreamEventParser` (testable avec les
+  fixtures à l'itération 5) ; re-vérifié par replay, logs identiques.
+- **Appris** : record positionnel (égalité par valeur, utile pour les tests) ;
+  `where T : class` autorise le `return null` des méthodes génériques ; System.Text.Json
+  ignore les champs JSON inconnus par défaut ; un warning CS8604 n'est pas du bruit
+  (ArgumentNullException hors du catch → guard clause) ; `dotnet run --no-launch-profile`
+  = environnement Production (appsettings.Development.json non chargé).
+- **Prochaines étapes** : corréler `PlaylistId` sur casual 3v3 + extra mode (risque
+  ARCHITECTURE.md) ; script d'anonymisation des fixtures ; puis itération 2 (persistance).
+
 ## 2026-11-23 — Itération 1, session 2 : captures réelles du flux Stats API
 
 - **Objectif** : capturer des échantillons JSON réels du flux et les stocker comme
