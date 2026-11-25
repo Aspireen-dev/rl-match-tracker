@@ -1,21 +1,26 @@
 using System.Net.Sockets;
 using System.Text.Json;
+using Api.Ingestion.Dtos;
 using Microsoft.Extensions.Options;
 
 namespace Api.Ingestion;
 
 // Service d'arrière-plan qui maintient une connexion TCP au flux Stats API du jeu.
 // Le JEU fait office de serveur (localhost:49123) : notre API est le client.
+// Responsabilité ici : UNIQUEMENT le transport (connexion, boucle de lecture, reconnexion).
+// Le parsing typé est délégué au StreamEventParser.
 public sealed class GameStatsIngestionService : BackgroundService
 {
     private readonly ILogger<GameStatsIngestionService> _logger;
     private readonly GameStatsOptions _options;
+    private readonly StreamEventParser _parser;
 
-    // DI : le conteneur ASP.NET Core injecte le logger et les options tout seuls.
-    public GameStatsIngestionService(ILogger<GameStatsIngestionService> logger, IOptions<GameStatsOptions> options)
+    // DI : le conteneur ASP.NET Core injecte le logger, les options et le parser tout seuls.
+    public GameStatsIngestionService(ILogger<GameStatsIngestionService> logger, IOptions<GameStatsOptions> options, StreamEventParser parser)
     {
         _logger = logger;
         _options = options.Value; // .Value = l'objet rempli depuis appsettings.json
+        _parser = parser;
     }
 
     // Boucle principale : tourne jusqu'à l'arrêt de l'app et se reconnecte à chaque perte de flux.
@@ -61,13 +66,11 @@ public sealed class GameStatsIngestionService : BackgroundService
         {
             // Le flux est un stream d'objets JSON concaténés (aucun séparateur) :
             // topLevelValues: true (.NET 9+) lit les valeurs top-level successives directement (~30/s).
-            await foreach (JsonElement message in JsonSerializer.DeserializeAsyncEnumerable<JsonElement>(stream, topLevelValues: true, cancellationToken: cancellationToken))
+            await foreach (StreamEnvelope? envelope in JsonSerializer.DeserializeAsyncEnumerable<StreamEnvelope>(stream, topLevelValues: true, cancellationToken: cancellationToken))
             {
-                string raw = message.GetRawText();
-
-                // Un UpdateState fait plusieurs Ko : on tronque pour ne pas inonder les logs.
-                _logger.LogInformation("Received: {Message}",
-                    raw.Length > 500 ? raw[..500] + "..." : raw);
+                // Parsing délégué : double désérialisation + dispatch vers les DTOs.
+                // Un payload illisible ne lève pas ici (géré dans le parser) et ne coupe pas la connexion.
+                _parser.Parse(envelope);
             }
         }
         catch (JsonException ex)
