@@ -33,6 +33,7 @@ Ce projet comble ce vide avec une application full-stack :
 - [`ROADMAP.md`](docs/ROADMAP.md) : backlog itératif V1 → V2 → V3 (FR)
 - [`JOURNAL.md`](docs/JOURNAL.md) : journal de progression, session par session (FR)
 - [`STACK.md`](docs/STACK.md) : chaque outil du projet expliqué simplement (ce qu'il fait, ce qu'il apporte ici)
+- [`PLAYLISTS.md`](docs/PLAYLISTS.md) : table des `PlaylistId` du flux Stats API → mode (captures réelles + source communautaire), stratégie pour les LTM (FR)
 
 ## Configuration du jeu
 

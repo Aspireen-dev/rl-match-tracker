@@ -16,7 +16,7 @@
 - [x] Deserialiser le JSON en DTOs typés (UpdateState + événements) ; tolérance aux champs inconnus — DTOs dans `src/Api/Ingestion/Dtos/`, double désérialisation (enveloppe puis `Data`), validé par replay de capture (13 346 msg, 0 erreur)
 - [x] Reconnexion automatique avec backoff si le jeu ferme le flux
 - [x] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests) — captures brutes dans `captures/` gitignoré (menu 572 msg/30 s, entraînement 353 msg, match casual 2v2 complet 13 346 msg avec MatchGuid)
-- [ ] **Vérifier la fiabilité du champ playlist/mode sur les fixtures réels** (jouer une partie de chaque type : ranked 2v2, casual 3v3, un extra mode) — cf. risque documenté dans ARCHITECTURE.md ; le résultat tranche le plan B
+- [x] **Vérifier la fiabilité du champ playlist/mode sur les fixtures réels** — `PlaylistId` constant par match et distinct par mode (casual 2v2=2, ranked 2v2=11, ranked 3v3=13, Hoops=27) → fiable, ranked/casual distinguable ; `Arena` confirme les extra modes. Risque ARCHITECTURE.md résolu.
 - [ ] Écrire le script d'anonymisation des fixtures (noms et UIDs factices, formats préservés) ; captures brutes gitignorées — cf. CONTRIBUTING.md
 - *Apprentissage : async/await avancé, sockets, System.Text.Json, BackgroundService*
 
