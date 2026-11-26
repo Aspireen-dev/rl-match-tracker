@@ -4,6 +4,26 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-26 — Itération 1, session 4 : corrélation PlaylistId sur 4 matchs réels
+
+- **Objectif** : vérifier la fiabilité du champ playlist/mode (risque ARCHITECTURE.md).
+- **Fait** : 4 nouvelles captures (sonde `capture_stream.py`, jeu allumé) : ranked 3v3
+  (11 915 msg), Hoops (13 063 msg), ranked 2v2 (12 479 msg), Rumble (5 867 msg, forfeit 4-0
+  capturé quand même). Extraction via `captures/extract_playlist.py`.
+- **Résultat** : `PlaylistId` constant sur tout un match et distinct par mode —
+  casual 2v2=2, ranked 2v2=11, ranked 3v3=13, Hoops=27 (Arena HoopsStadium_P),
+  Rumble=28 (Arena Labs_DoubleGoal_V2_P). Deux extra modes testés → chacun son propre ID.
+  → ranked vs casual DISTINGUABLE par PlaylistId ; le plan B « playlist shape » n'est
+  pas nécessaire. Psyonix ne publie pas la table officielle des IDs : le mapping observé
+  est à compléter au fil des matchs.
+- **Décision** : risque playlist/mode d'ARCHITECTURE.md marqué résolu ; on s'appuie sur
+  `Game.PlaylistId` (+ `Game.Arena` pour les extra modes). Table de correspondance
+  compilée dans `docs/PLAYLISTS.md` (nos captures + table communautaire publique ;
+  LTM = IDs rotatifs → fallback Arena / "Playlist #ID").
+  Le mapping C# (affichage) sera créé à l'itération 3 (YAGNI) ; le PlaylistId brut est
+  toujours stocké.
+- **Reste itération 1** : script d'anonymisation des fixtures. Puis itération 2 (persistance).
+
 ## 2026-11-25 — Itération 1, session 3 : DTOs typés + parseur, validés par replay de capture
 
 - **Objectif** : désérialiser le flux en DTOs typés (UpdateState + événements), avec
