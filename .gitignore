@@ -64,3 +64,7 @@ Thumbs.db
 ## Raw captures from the game socket: fixtures we explicitly KEEP go in
 ## tests/Api.Tests/Fixtures/ (committed); one-off scratch captures go here
 captures/
+
+# ---- Python (outils de fixtures) ----
+__pycache__/
+*.pyc
