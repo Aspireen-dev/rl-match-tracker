@@ -70,7 +70,7 @@ docs: add architecture decision records
 
 ### Fixture privacy
 
-Real captures may contain third-party players' display names and platform IDs. Fixtures committed to the public repository are anonymized: display names replaced with generated placeholders, platform UIDs replaced with fake values, **preserving the exact field formats** (`Platform|Uid|Splitscreen`). Raw, non-anonymized captures stay on the developer machine (gitignored). The anonymization script lives in `tests/fixtures/` and is the only sanctioned path from a raw capture to a committed fixture. Third-party data is used for realistic testing only, never exposed.
+Real captures may contain third-party players' display names and platform IDs. Fixtures committed to the public repository are anonymized: display names replaced with generated placeholders, platform UIDs replaced with fake values, **preserving the exact field formats** (`Platform|Uid|Splitscreen`). Raw, non-anonymized captures stay on the developer machine (gitignored). The anonymization script lives in `tests/anonymize_fixture.py` (committed fixtures go to `tests/Api.Tests/Fixtures/`) and is the only sanctioned path from a raw capture to a committed fixture: `python tests/anonymize_fixture.py captures/<raw>.jsonl tests/Api.Tests/Fixtures/<name>.jsonl`. Third-party data is used for realistic testing only, never exposed.
 
 ## Definition of Done (per increment)
 
