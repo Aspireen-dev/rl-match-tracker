@@ -4,6 +4,20 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-26 — Itération 1, session 5 : script d'anonymisation des fixtures (itération 1 terminée)
+
+- **Objectif** : anonymiser les captures brutes en fixtures commitables (dernier item itération 1).
+- **Fait** : `tests/anonymize_fixture.py` — capture JSONL brute → fixture anonymisée dans
+  `tests/Api.Tests/Fixtures/`. Noms → `Player_XX` (mapping cohérent dans tout le fichier),
+  `PrimaryId` → `Platform|uid factice|Splitscreen` (format préservé : numérique Steam-like,
+  hex 32 pour Epic), `MatchGuid` → GUID factice 32 hex. Le reste (scores, stats, Arena,
+  PlaylistId, Loadout) est conservé ; noms d'équipe génériques Blue/Orange gardés.
+- **Vérifié** : fixture `match-casual-2v2.anonymized.jsonl` (13 346 msg) — 0 nom/UID réel
+  restant, formats OK, et le parser C# la lit sans erreur (replay + API : 0 warning).
+- **Décision** : ce script est le seul chemin capture brute → fixture commitée (chemin réel
+  noté dans CONTRIBUTING.md).
+- **🚀 Itération 1 terminée** : prochaine = itération 2 (modèle EF Core + persistance des matchs).
+
 ## 2026-11-26 — Itération 1, session 4 : corrélation PlaylistId sur 4 matchs réels
 
 - **Objectif** : vérifier la fiabilité du champ playlist/mode (risque ARCHITECTURE.md).
