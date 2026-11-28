@@ -54,6 +54,19 @@ WebPort=49124
 > → revérifier le ini (section `[TAGame.MatchStatsExporter_TA]`, `PacketSendRate` entre 1
 > et 120) et relancer le jeu.
 
+## Contribuer (setup local)
+
+Après un clone, activer le hook pre-commit (scan de confidentialité des fixtures) :
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Les captures brutes (`captures/*.jsonl`) contiennent des vrais noms/IDs de joueurs :
+elles restent locales (gitignorées) ; seules les fixtures anonymisées
+(`tests/anonymize_fixture.py` + `tests/check_fixtures_privacy.py`) sont commitées.
+Voir [CONTRIBUTING.md](docs/CONTRIBUTING.md) pour les conventions.
+
 ## Statut
 
 Projet d'apprentissage full-stack, en développement itératif. Voir la [roadmap](docs/ROADMAP.md).

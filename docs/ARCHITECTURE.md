@@ -44,12 +44,33 @@ Core entities:
 Notes:
 - Some fields are CONDITIONAL in the stream (e.g. `MatchGuid` only in online play) → all parsers must handle missing data without crashing.
 - Spectator-only fields (boost, speed) are visible for the local player's team; treat them as "nice to have", never as guaranteed.
+
+### 2.2 Personal data & privacy (rules, see CONTRIBUTING "Fixture privacy")
+
+The stream contains third-party players' display names and platform IDs. Rules:
+
+- **Nothing personal leaves the machine**: raw captures (`captures/*.jsonl`) and the
+  local database (`*.db`, `*.sqlite`) are gitignored; only anonymized fixtures
+  (`tests/Api.Tests/Fixtures/`) are committed, produced exclusively by
+  `tests/anonymize_fixture.py` and verified by `tests/check_fixtures_privacy.py`
+  (pre-commit hook `.githooks/`). The raw JSON payloads persisted from iteration 2
+  (see above) therefore stay local-only — never commit them, never log them.
+- **Logs never contain personal data above `Debug`** (active in Development only):
+  no player name, no `PrimaryId`, no team name (a team name can be a player's
+  pseudo); invalid-payload previews are truncated; oversized payloads are dropped.
+- **Local trust boundary**: the game socket is `127.0.0.1` only; any local process
+  could impersonate the game, so payloads are parsed defensively (size cap,
+  never-throw parser).
 - SQLite provider via EF Core, kept **provider-agnostic** (no raw SQL, no SQLite-specific types) so the V2 PostgreSQL switch stays simple (no raw SQL rewrite), while the migration itself remains real work: data transfer utility, tests on both providers. Migrations are EF Core migrations, not hand-written SQL.
 
 ### 2.1 Local player identity (blocking decision for aggregation)
 
 The stream has NO "local player" flag: every lobby player arrives with a
-`PrimaryId` (`Platform|Uid|Splitscreen`). Resolution strategy (V1):
+`PrimaryId` (`Platform|Uid|Splitscreen`). The uid format is **platform-specific**
+(Steam: 17 digits starting `7656119`; Epic: 32 hex chars; PS4: 18-19 digits;
+XboxOne: 16 digits) — the exact per-platform specs live in `tests/stream_ids.py`
+(`PLATFORM_SPECS`), shared by the anonymizer and the privacy scanner.
+Resolution strategy (V1):
 
 - The user configures their platform (Steam/Epic) and account ID once in
   app settings; the app builds the expected `PrimaryId` and stores it in

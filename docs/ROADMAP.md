@@ -15,9 +15,9 @@
 - [x] Client TCP asynchrone (BackgroundService) qui se connecte au socket et logue les messages reçus
 - [x] Deserialiser le JSON en DTOs typés (UpdateState + événements) ; tolérance aux champs inconnus — DTOs dans `src/Api/Ingestion/Dtos/`, double désérialisation (enveloppe puis `Data`), validé par replay de capture (13 346 msg, 0 erreur)
 - [x] Reconnexion automatique avec backoff si le jeu ferme le flux
-- [x] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests) — captures brutes dans `captures/` gitignoré (menu 572 msg/30 s, entraînement 353 msg, match casual 2v2 complet 13 346 msg avec MatchGuid)
+- [x] **Capturer des échantillons JSON réels et les stocker comme fixtures** (base des futurs tests) — captures brutes (`captures/*.jsonl`, avec vrais noms/IDs) gitignorées, scripts outil (`captures/*.py`) versionnés (menu 572 msg/30 s, entraînement 353 msg, match casual 2v2 complet 13 346 msg avec MatchGuid)
 - [x] **Vérifier la fiabilité du champ playlist/mode sur les fixtures réels** — `PlaylistId` constant par match et distinct par mode (casual 2v2=2, ranked 2v2=11, ranked 3v3=13, Hoops=27) → fiable, ranked/casual distinguable ; `Arena` confirme les extra modes. Risque ARCHITECTURE.md résolu.
-- [x] Écrire le script d'anonymisation des fixtures (noms et UIDs factices, formats préservés) ; captures brutes gitignorées — `tests/anonymize_fixture.py` → `tests/Api.Tests/Fixtures/`, validé sur match-casual-2v2 (13 346 msg, 0 donnée réelle, parser C# OK)
+- [x] Écrire le script d'anonymisation des fixtures (noms et UIDs factices, formats préservés) — `tests/anonymize_fixture.py` → `tests/Api.Tests/Fixtures/`, validé sur match-casual-2v2 (0 donnée réelle, parser C# OK). Formats d'ID par plateforme dans `tests/stream_ids.py` ; garde-fou `tests/check_fixtures_privacy.py` + hook pre-commit `.githooks/` (audit sécurité 2026-11-28, voir JOURNAL)
 - *Apprentissage : async/await avancé, sockets, System.Text.Json, BackgroundService*
 
 ### Itération 2 — Persister les matchs
@@ -53,7 +53,7 @@
 - *Apprentissage : xUnit, testing d'API, tests front. Fondation qui sécurise toutes les itérations suivantes.*
 
 ### Itération 6 — CI GitHub Actions
-- [ ] Workflow : build + tests + lint à chaque push
+- [ ] Workflow : build + tests + lint à chaque push, **plus le scan privacy des fixtures** (`python tests/check_fixtures_privacy.py` — tourne déjà en pre-commit local via `.githooks/`, à rajouter au workflow CI)
 - [ ] Repasser `npm audit` et traiter les 5 advisories constatées à l'itération 0 (ReDoS sur la chaîne picomatch → tinyglobby → vite ; ne pas utiliser `--force`, qui rétrograderait Vite)
 - *Apprentissage : CI, GitHub Actions. Naturel une fois les tests écrits.*
 

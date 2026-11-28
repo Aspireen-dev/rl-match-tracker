@@ -89,6 +89,15 @@ sa couche données.
 
 ## Outils transverses
 
+### Python — outils de capture et de fixtures (`captures/`, `tests/`)
+Python sert uniquement aux outils hors `src/` : sonde de capture du flux
+(`captures/capture_stream.py`), faux jeu pour rejouer une capture
+(`captures/replay_capture.py`), anonymiseur de fixtures
+(`tests/anonymize_fixture.py`) et scanner de confidentialité
+(`tests/check_fixtures_privacy.py` + hook `.githooks/pre-commit`).
+Les formats d'identifiants par plateforme (`PrimaryId`, `MatchGuid`) sont
+centralisés dans `tests/stream_ids.py`.
+
 ### Git + Conventional Commits
 Le gestionnaire de versions, avec des messages normalisés
 (`feat:`, `fix:`, `docs:`) qui rendent l'historique navigable et
