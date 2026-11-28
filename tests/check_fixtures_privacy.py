@@ -17,8 +17,9 @@ Code de sortie : 0 = propre, 1 = fuite détectée (détail imprimé), 2 = erreur
 Ce qui est considéré comme une fuite :
   - un Name/PlayerName qui n'est ni un placeholder "Player_NN" ni le nom
     d'équipe générique Blue/Orange (dans un objet Team, reconnaissable à ColorPrimary) ;
-  - un PrimaryId dont l'uid n'est PAS factice (Steam factice = base 76561190000000000
-    + petit compteur ; Epic factice = hex 32 chars avec >= 24 zéros de tête) ;
+  - un PrimaryId dont l'uid n'est PAS factice (les factices sont reconnaissables :
+    Steam = préfixe 76561190000000, Epic = hex 32 avec >= 24 zéros de tête,
+    PS4/XboxOne = numérique commençant par "0" — voir tests/stream_ids.py) ;
   - toute chaîne de 32 caractères hex (MatchGuid ou autre) avec < 24 zéros de tête
     (les GUID factices sont un compteur complété de zéros).
 """

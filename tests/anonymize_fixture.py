@@ -13,7 +13,8 @@ le fichier : un même joueur garde le même faux nom partout) :
     Teams[].Name sauf "Blue"/"Orange" qui sont génériques)
       -> "Player_01", "Player_02", ... dans l'ordre d'apparition
   - PrimaryId "Platform|Uid|Splitscreen" -> "Platform|<uid factice>|<même Splitscreen>"
-      (format préservé ; uid factice : numérique type Steam, ou hex 32 chars pour Epic)
+      (format préservé, faux uid fabriqué PAR PLATEFORME avec la même forme que le
+      vrai : 17 chiffres pour Steam, 32 hex pour Epic, etc. — voir tests/stream_ids.py)
   - MatchGuid -> GUID factice (32 hex), cohérent par match
   - défense en profondeur : TOUTE string ressemblant à un PrimaryId
     ("Platform|uid|Splitscreen") ou à un GUID (32 hex), quel que soit son champ,
@@ -31,9 +32,9 @@ Usage :
 import json
 import sys
 
-# Formats d'identifiants du flux + prédicats (is_primary_id, is_guid, is_hex_uid)
-# partagés avec check_fixtures_privacy.py — voir tests/stream_ids.py pour le détail.
-from stream_ids import is_guid, is_hex_uid, is_primary_id
+# Formats d'identifiants du flux PAR PLATEFORME + prédicats, partagés avec
+# check_fixtures_privacy.py — voir tests/stream_ids.py pour le détail.
+from stream_ids import fake_uid_for, is_guid, is_primary_id, parse_primary_id
 
 # Noms d'équipe génériques du jeu : PAS des données personnelles, on les garde.
 GENERIC_TEAM_NAMES = {"Blue", "Orange"}
@@ -56,19 +57,15 @@ class Anonymizer:
         return self._names[name]
 
     def fake_primary_id(self, pid):
-        # Format à préserver : "Platform|Uid|Splitscreen"
+        # Format à préserver : "Platform|Uid|Splitscreen". Le faux uid garde la
+        # FORME du vrai : fabrique dédiée par plateforme dans stream_ids.py.
         if pid not in self._pids:
-            parts = pid.split("|")
-            if len(parts) != 3:
+            parsed = parse_primary_id(pid)
+            if parsed is None:
                 self._pids[pid] = self._next("Fake")  # format inattendu : on dégage
             else:
-                platform, uid, splitscreen = parts
-                # Le uid factice emprunte l'alphabet du vrai : hex pour Epic,
-                # numérique pour Steam/PS4/XboxOne.
-                if is_hex_uid(uid):
-                    fake_uid = f"{self._counter:032x}"                 # hex 32 chars
-                else:
-                    fake_uid = str(76561190000000000 + self._counter)  # numérique Steam-like
+                platform, uid, splitscreen = parsed
+                fake_uid = fake_uid_for(platform, self._counter, uid)
                 self._pids[pid] = f"{platform}|{fake_uid}|{splitscreen}"
         return self._pids[pid]
 
