@@ -61,9 +61,11 @@ Thumbs.db
 *.swp
 
 # ---- Project-specific ----
-## Raw captures from the game socket: fixtures we explicitly KEEP go in
-## tests/Api.Tests/Fixtures/ (committed); one-off scratch captures go here
-captures/
+## Raw captures from the game socket contain real player names/IDs: ONLY the
+## anonymized fixtures in tests/Api.Tests/Fixtures/ are committed. The capture
+## TOOLING (captures/*.py) is code and IS committed; the raw data (*.jsonl) is not.
+captures/*
+!captures/*.py
 
 # ---- Python (outils de fixtures) ----
 __pycache__/

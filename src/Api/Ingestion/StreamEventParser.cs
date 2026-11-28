@@ -17,6 +17,14 @@ public sealed class StreamEventParser
     // Le tick UpdateState arrive ~30 fois/s : on ne loggue qu'un résumé tous les N.
     private const int UpdateStateLogEvery = 300;
 
+    // Garde-fou : un payload "Data" plus gros que ça est traité comme anormal
+    // (flux local sain = ~3 Ko/message) -> warning + ignoré, le flux continue.
+    private const int MaxPayloadChars = 1_000_000;
+
+    // Preview de log pour un payload illisible : volontairement court pour ne pas
+    // recopier de données personnelles (noms, IDs) dans les logs en cas de JSON cassé.
+    private const int InvalidPayloadPreviewChars = 80;
+
     public StreamEventParser(ILogger<StreamEventParser> logger)
     {
         _logger = logger;
@@ -75,6 +83,14 @@ public sealed class StreamEventParser
             return null;
         }
 
+        // Garde-fou taille : un payload anormalement gros est ignoré (pas de tentative de
+        // désérialisation) pour ne pas saturer la mémoire sur un flux défectueux.
+        if (data.Length > MaxPayloadChars)
+        {
+            _logger.LogWarning("Oversized event payload ignored: {Length} chars (max {Max})", data.Length, MaxPayloadChars);
+            return null;
+        }
+
         try
         {
             return JsonSerializer.Deserialize<T>(data, StreamJsonOptions.Default);
@@ -82,12 +98,18 @@ public sealed class StreamEventParser
         catch (JsonException ex)
         {
             // data est non-null ici (guard ci-dessus) : on peut tronquer sans "?? \"\"".
-            string preview = data.Length > 200 ? data[..200] + "..." : data;
+            // Preview volontairement court : un payload cassé peut contenir des données
+            // personnelles (noms, IDs) qu'on ne veut pas recopier dans les logs.
+            string preview = data.Length > InvalidPayloadPreviewChars ? data[..InvalidPayloadPreviewChars] + "..." : data;
             _logger.LogWarning(ex, "Invalid JSON for event payload: {DataPreview}", preview);
             return null;
         }
     }
 
+    // Politique de confidentialité des logs : les noms de joueurs et PrimaryId sont des
+    // données personnelles (y compris de joueurs tiers) -> UNIQUEMENT en LogDebug, qui
+    // n'est actif qu'en Development (appsettings.Development.json). En production
+    // (niveau Information), aucun nom ni ID n'apparaît dans les logs.
     private void LogParsed(ParsedStreamEvent parsed)
     {
         switch (parsed.Event)
@@ -96,22 +118,27 @@ public sealed class StreamEventParser
                 if (++_updateStateCount % UpdateStateLogEvery == 0)
                 {
                     // ToString() d'un DTO n'affiche que le nom de classe : on loggue les champs utiles.
-                    string score = string.Join(" - ", update.Game.Teams.Select(t => $"{t.Name} {t.Score}"));
+                    // Un nom d'équipe PEUT être le pseudo d'un joueur (équipe nommée d'après lui) :
+                    // on loggue TeamNum, jamais Team.Name.
+                    string score = string.Join(" - ", update.Game.Teams.Select(t => $"Team{t.TeamNum} {t.Score}"));
                     _logger.LogDebug("UpdateState #{Count}: MatchGuid={MatchGuid}, Players={PlayerCount}, PlaylistId={PlaylistId}, Arena={Arena}, Score={Score}",
                         _updateStateCount, update.MatchGuid, update.Players.Count, update.Game.PlaylistId, update.Game.Arena, score);
                 }
                 break;
 
             case StreamEvents.GoalScored when parsed.Payload is GoalScoredDto goal:
-                _logger.LogInformation("GoalScored: buteur={Scorer}, GoalTime={GoalTime}, vitesse={GoalSpeed}", goal.Scorer?.Name, goal.GoalTime, goal.GoalSpeed);
+                // Nom du buteur = donnée personnelle -> Debug uniquement.
+                _logger.LogDebug("GoalScored: buteur={Scorer}, GoalTime={GoalTime}, vitesse={GoalSpeed}", goal.Scorer?.Name, goal.GoalTime, goal.GoalSpeed);
                 break;
 
             case StreamEvents.StatfeedEvent when parsed.Payload is StatfeedEventDto stat:
-                _logger.LogInformation("StatfeedEvent: {EventName} par {MainTarget}", stat.EventName, stat.MainTarget?.Name);
+                // MainTarget = joueur -> Debug uniquement.
+                _logger.LogDebug("StatfeedEvent: {EventName} par {MainTarget}", stat.EventName, stat.MainTarget?.Name);
                 break;
 
             case StreamEvents.PlayerJoined or StreamEvents.PlayerLeft when parsed.Payload is PlayerPresenceDto presence:
-                _logger.LogInformation("{Event}: joueur={PlayerName}, PrimaryId={PrimaryId}", parsed.Event, presence.PlayerName, presence.PrimaryId);
+                // Nom + PrimaryId = données personnelles -> Debug, et PrimaryId jamais loggué.
+                _logger.LogDebug("{Event}: joueur={PlayerName}", parsed.Event, presence.PlayerName);
                 break;
 
             case StreamEvents.ClockUpdatedSeconds when parsed.Payload is ClockUpdatedSecondsDto clock:

@@ -15,6 +15,9 @@ le fichier : un même joueur garde le même faux nom partout) :
   - PrimaryId "Platform|Uid|Splitscreen" -> "Platform|<uid factice>|<même Splitscreen>"
       (format préservé ; uid factice : numérique type Steam, ou hex 32 chars pour Epic)
   - MatchGuid -> GUID factice (32 hex), cohérent par match
+  - défense en profondeur : TOUTE string ressemblant à un PrimaryId
+    ("Platform|uid|Splitscreen") ou à un GUID (32 hex), quel que soit son champ,
+    est anonymisée aussi (champ inconnu ajouté par le jeu = couvert)
   - tout le reste (scores, stats, Arena, PlaylistId, Loadout cosmétique...) est conservé
 
 Usage :
@@ -26,10 +29,17 @@ Usage :
                  N = 100 par défaut. Le brut complet reste dans captures/ (gitignoré).
 """
 import json
+import re
 import sys
 
 # Noms d'équipe génériques du jeu : PAS des données personnelles, on les garde.
 GENERIC_TEAM_NAMES = {"Blue", "Orange"}
+
+# Détection PAR PATTERN, indépendante du nom de champ (défense en profondeur) :
+# si le jeu ajoute demain un champ contenant un ID ou un GUID, il est quand même
+# anonymisé. Un uid Epic = hex 32 chars ; un uid Steam = numérique ~17 chiffres.
+PRIMARY_ID_PATTERN = re.compile(r"^[A-Za-z]+\|[0-9a-fA-F]{16,}\|\d+$|^[A-Za-z]+\|\d{15,}\|\d+$")
+GUID_PATTERN = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 class Anonymizer:
@@ -69,7 +79,13 @@ class Anonymizer:
         return self._guids[guid]
 
     def anonymize(self, node):
-        """Parcourt récursivement dict/list et anonymise les champs personnels connus."""
+        """Parcourt récursivement dict/list/str et anonymise les données personnelles.
+
+        Deux niveaux de détection :
+        - par NOM de champ (MatchGuid, PrimaryId, Name, PlayerName — insensible à la casse) ;
+        - par PATTERN sur toute string (uid Epic/Steam, GUID 32 hex), pour attraper un
+          champ inconnu qui contiendrait un identifiant.
+        """
         if isinstance(node, dict):
             # Un objet "Team" se reconnaît à ses couleurs (ColorPrimary/ColorSecondary).
             # Seul Game.Teams[].Name peut garder les noms génériques Blue/Orange ;
@@ -78,18 +94,29 @@ class Anonymizer:
             is_team = "ColorPrimary" in node
             out = {}
             for key, value in node.items():
-                if key == "MatchGuid" and isinstance(value, str):
+                lower = key.lower()
+                if lower == "matchguid" and isinstance(value, str):
                     out[key] = self.fake_guid(value)
-                elif key == "PrimaryId" and isinstance(value, str):
+                elif lower == "primaryid" and isinstance(value, str):
                     out[key] = self.fake_primary_id(value)
-                elif key in ("Name", "PlayerName") and isinstance(value, str):
+                elif lower in ("name", "playername") and isinstance(value, str):
                     out[key] = value if (is_team and value in GENERIC_TEAM_NAMES) else self.fake_name(value)
                 else:
                     out[key] = self.anonymize(value)
             return out
         if isinstance(node, list):
             return [self.anonymize(item) for item in node]
+        if isinstance(node, str):
+            return self._anonymize_string(node)
         return node
+
+    def _anonymize_string(self, value):
+        """Anonymise une string nue qui ressemble à un PrimaryId ou un GUID (32 hex)."""
+        if PRIMARY_ID_PATTERN.match(value):
+            return self.fake_primary_id(value)
+        if GUID_PATTERN.match(value):
+            return self.fake_guid(value)
+        return value
 
 
 def main() -> int:

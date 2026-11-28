@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Garde-fou confidentialité : bloque le commit si une fixture contient des données
+# personnelles réelles (noms, IDs de plateforme, GUIDs).
+# Activation (une fois par clone) : git config core.hooksPath .githooks
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+python tests/check_fixtures_privacy.py

@@ -4,6 +4,17 @@
 le "comment" est documenté par le code : ce journal garde le pourquoi de
 la progression — notions acquises, pièges résolus, décisions tranchées.*
 
+## 2026-11-28 — Mini-audit sécurité avant itération 2 : 5 points traités
+
+- **Objectif** : auditer la sécurité du code et des données avant de passer à l'itération 2 (modèle EF Core + persistance), et traiter chaque point trouvé.
+- **Constat initial** : aucun secret dans le code ni dans l'historique git ; les captures brutes (vrais noms + IDs Steam/Epic de joueurs tiers) sont bien gitignorées et jamais commitées ; la fixture commitée est propre (vérifié au scanner). Côté surface HTTP : un seul endpoint `GET /api/health`, Kestrel en localhost uniquement, aucune donnée entrante — rien à corriger pour un outil 100 % local.
+- **Point 1 — PII dans les logs (corrigé)** : `StreamEventParser` logguait noms de joueurs et `PrimaryId` en `Information`. Règle appliquée : noms/IDs UNIQUEMENT en `LogDebug` (actif en Development seulement) ; `PrimaryId` plus jamais loggué ; le nom d'équipe n'est plus loggué (un nom d'équipe PEUT être le pseudo d'un joueur, ex. « LOVERBHOOYS ») ; le preview de JSON invalide tronqué de 200 à 80 caractères. **Vérifié** : replay de la fixture en Production → 0 nom/ID dans les logs, tout en ayant bien consommé le flux.
+- **Point 2 — scripts de capture gitignorés (corrigé)** : `captures/` ignorait tout le dossier, y compris les outils (`capture_stream.py`, etc.) cités dans ce journal. `.gitignore` passé à `captures/*` + `!captures/*.py` : les scripts sont commités, les `*.jsonl` bruts non.
+- **Point 3 — anonymiseur par liste de champs (corrigé)** : `tests/anonymize_fixture.py` détecte maintenant aussi PAR PATTERN (toute string en `Platform|uid|Splitscreen` ou GUID 32 hex, quel que soit le champ) + noms de champs insensibles à la casse. **Nouveau** : `tests/check_fixtures_privacy.py`, scanner qui bloque toute fixture contenant un vrai nom/UID/GUID, lancé à chaque commit via le hook `.githooks/pre-commit` (`git config core.hooksPath .githooks`). **Vérifié** : scanner OK sur la fixture commitée et sur une ré-anonymisation, FUITE (rc=1) sur les 7 captures brutes.
+- **Point 4 — confiance au flux local (garde-fou ajouté)** : n'importe quel process local peut usurper le jeu sur 127.0.0.1:49123. Ajout d'un plafond de payload (1 M caractères) dans `ParseData<T>` : au-delà, warning + ignore, le flux continue. **Vérifié** : replay d'un payload de 1,5 M chars → `Oversized event payload ignored: 1500053 chars (max 1000000)`.
+- **Point 5 — `AllowedHosts: "*"`, pas de CORS/auth (inchangé, assumé)** : acceptable tant que tout reste en localhost (documenté dans CONTRIBUTING : « No authentication (local app) »). À revisiter si l'API est un jour exposée au-delà de la machine ou si un endpoint accepte des données.
+- **Décision** : itération 2 (persistance EF Core) peut démarrer sur une base assainie. Rappel : les futures BDD locales (`*.db`, `*.sqlite`) sont déjà gitignorées.
+
 ## 2026-11-26 — Itération 1, session 5 : script d'anonymisation des fixtures (itération 1 terminée)
 
 - **Objectif** : anonymiser les captures brutes en fixtures commitables (dernier item itération 1).
