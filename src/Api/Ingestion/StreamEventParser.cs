@@ -69,7 +69,7 @@ public sealed class StreamEventParser
     /// 2e désérialisation : "Data" est une string contenant du JSON échappé.
     /// Deux cas de tolérance, gérés ici :
     ///  - data null/vide  → guard clause, return null SANS warning (rien à parser) ;
-    ///  - JSON invalide   → catch JsonException, warning tronqué à 200 caractères + null
+    ///  - JSON invalide   → catch JsonException, warning tronqué (InvalidPayloadPreviewChars) + null
     ///    (CONTRIBUTING : "log and continue on bad payloads" — le flux continue).
     /// Les champs JSON inconnus DANS le payload sont ignorés par System.Text.Json
     /// (voir StreamJsonOptions) : un champ ajouté par le jeu ne casse rien.
