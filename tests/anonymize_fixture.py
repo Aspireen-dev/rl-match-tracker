@@ -29,17 +29,14 @@ Usage :
                  N = 100 par défaut. Le brut complet reste dans captures/ (gitignoré).
 """
 import json
-import re
 import sys
+
+# Formats d'identifiants du flux + prédicats (is_primary_id, is_guid, is_hex_uid)
+# partagés avec check_fixtures_privacy.py — voir tests/stream_ids.py pour le détail.
+from stream_ids import is_guid, is_hex_uid, is_primary_id
 
 # Noms d'équipe génériques du jeu : PAS des données personnelles, on les garde.
 GENERIC_TEAM_NAMES = {"Blue", "Orange"}
-
-# Détection PAR PATTERN, indépendante du nom de champ (défense en profondeur) :
-# si le jeu ajoute demain un champ contenant un ID ou un GUID, il est quand même
-# anonymisé. Un uid Epic = hex 32 chars ; un uid Steam = numérique ~17 chiffres.
-PRIMARY_ID_PATTERN = re.compile(r"^[A-Za-z]+\|[0-9a-fA-F]{16,}\|\d+$|^[A-Za-z]+\|\d{15,}\|\d+$")
-GUID_PATTERN = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 class Anonymizer:
@@ -65,11 +62,13 @@ class Anonymizer:
             if len(parts) != 3:
                 self._pids[pid] = self._next("Fake")  # format inattendu : on dégage
             else:
-                platform, _, splitscreen = parts
-                if platform == "Epic":
-                    fake_uid = f"{self._counter:032x}"          # Epic = hex 32 chars
+                platform, uid, splitscreen = parts
+                # Le uid factice emprunte l'alphabet du vrai : hex pour Epic,
+                # numérique pour Steam/PS4/XboxOne.
+                if is_hex_uid(uid):
+                    fake_uid = f"{self._counter:032x}"                 # hex 32 chars
                 else:
-                    fake_uid = str(76561190000000000 + self._counter)  # Steam-like = numérique
+                    fake_uid = str(76561190000000000 + self._counter)  # numérique Steam-like
                 self._pids[pid] = f"{platform}|{fake_uid}|{splitscreen}"
         return self._pids[pid]
 
@@ -112,9 +111,9 @@ class Anonymizer:
 
     def _anonymize_string(self, value):
         """Anonymise une string nue qui ressemble à un PrimaryId ou un GUID (32 hex)."""
-        if PRIMARY_ID_PATTERN.match(value):
+        if is_primary_id(value):
             return self.fake_primary_id(value)
-        if GUID_PATTERN.match(value):
+        if is_guid(value):
             return self.fake_guid(value)
         return value
 

@@ -28,38 +28,14 @@ import re
 import sys
 from pathlib import Path
 
+# Formats d'identifiants du flux + reconnaissance des valeurs factices,
+# partagés avec anonymize_fixture.py — voir tests/stream_ids.py pour le détail.
+from stream_ids import is_fake_guid, is_fake_primary_id, is_guid, is_primary_id
+
 FIXTURES_DIR = Path(__file__).resolve().parent / "Api.Tests" / "Fixtures"
 
 GENERIC_TEAM_NAMES = {"Blue", "Orange"}
 PLACEHOLDER_NAME = re.compile(r"^Player_\d+$")
-FAKE_FALLBACK = re.compile(r"^Fake_\d+$")
-
-# Formats "réels" suspects, quel que soit le nom du champ.
-PRIMARY_ID_PATTERN = re.compile(r"^[A-Za-z]+\|[0-9a-fA-F]{16,}\|\d+$|^[A-Za-z]+\|\d{15,}\|\d+$")
-GUID_PATTERN = re.compile(r"^[0-9a-fA-F]{32}$")
-
-# Reconnaissance des valeurs factices produites par anonymize_fixture.py.
-FAKE_STEAM_PREFIX = "76561190000000"   # 76561190000000000 + compteur
-FAKE_HEX_LEADING_ZEROS = 24            # guid/uid factice = compteur complété de zéros
-
-
-def is_fake_primary_id(pid):
-    parts = pid.split("|")
-    if len(parts) != 3:
-        return bool(FAKE_FALLBACK.match(pid))
-    uid = parts[1]
-    # Un uid Epic factice fait 32 chars (hex, parfois que des chiffres) ; un uid
-    # Steam (réel ou factice) fait ~17 chiffres. Tester la longueur d'abord, sinon
-    # un uid Epic factice composé uniquement de chiffres serait pris pour du Steam.
-    if len(uid) == 32:
-        return len(uid) - len(uid.lstrip("0")) >= FAKE_HEX_LEADING_ZEROS
-    if uid.isdigit():
-        return uid.startswith(FAKE_STEAM_PREFIX)
-    return False
-
-
-def is_fake_guid(value):
-    return len(value) - len(value.lstrip("0")) >= FAKE_HEX_LEADING_ZEROS
 
 
 def check_node(node, where, problems):
@@ -72,7 +48,7 @@ def check_node(node, where, problems):
                 if not PLACEHOLDER_NAME.match(value) and not (is_team and value in GENERIC_TEAM_NAMES):
                     problems.append(f"{where}: nom non anonymisé {key}={value!r}")
             elif lower == "primaryid" and isinstance(value, str):
-                if PRIMARY_ID_PATTERN.match(value) and not is_fake_primary_id(value):
+                if is_primary_id(value) and not is_fake_primary_id(value):
                     problems.append(f"{where}: vrai PrimaryId {value!r}")
             else:
                 check_node(value, f"{where}.{key}", problems)
@@ -80,9 +56,9 @@ def check_node(node, where, problems):
         for i, item in enumerate(node):
             check_node(item, f"{where}[{i}]", problems)
     elif isinstance(node, str):
-        if PRIMARY_ID_PATTERN.match(node) and not is_fake_primary_id(node):
+        if is_primary_id(node) and not is_fake_primary_id(node):
             problems.append(f"{where}: PrimaryId-like non factice {node!r}")
-        elif GUID_PATTERN.match(node) and not is_fake_guid(node):
+        elif is_guid(node) and not is_fake_guid(node):
             problems.append(f"{where}: GUID/uid 32 hex non factice {node!r}")
 
 
